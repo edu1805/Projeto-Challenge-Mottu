@@ -7,3 +7,5 @@ export interface Moto {
   coordenadaX: number;
   coordenadaY: number;
 }
+
+export default Moto;

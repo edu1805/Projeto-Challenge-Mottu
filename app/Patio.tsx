@@ -1,31 +1,156 @@
-import { Link } from 'expo-router';
-import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
-
-const motos = [
-  { id: '1', placa: 'ABC1234', motor: 'OK', situacao: 'prontas para uso' },
-  { id: '2', placa: 'XYZ5678', motor: 'com defeito', situacao: 'motor com defeito' },
-  { id: '3', placa: '---', motor: 'OK', situacao: 'sem placa' },
-  { id: '4', placa: 'AAA1111', motor: 'OK', situacao: 'reservada' },
-];
+import { FontAwesome } from '@expo/vector-icons'; // Importando ícones do FontAwesome
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Link, useFocusEffect } from 'expo-router';
+import React, { useState } from 'react';
+import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Patio() {
+  const [motos, setMotos] = useState<{ id: string; placa: string; status: string }[]>([]);
+
+  // Função para carregar as motos do AsyncStorage
+  const carregarMotos = async () => {
+    try {
+      const json = await AsyncStorage.getItem('@motos');
+      const lista = json ? JSON.parse(json) : [];
+      setMotos(lista);
+    } catch (e) {
+      console.error('Erro ao carregar motos:', e);
+    }
+  };
+
+  // Usando useFocusEffect para garantir que as motos sejam carregadas sempre que a tela for focada
+  useFocusEffect(
+    React.useCallback(() => {
+      carregarMotos();
+    }, [])
+  );
+
+  // Função para definir a cor do status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pronta':
+        return 'green';
+      case 'revisao':
+        return 'red';
+      case 'reservada':
+        return 'blue';
+      case 'sem placa':
+        return 'gray';
+      default:
+        return 'black';
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Todas as Motos</Text>
-      <FlatList
-        data={motos}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Text>{`Placa: ${item.placa} | Motor: ${item.motor} | Situação: ${item.situacao}`}</Text>
-        )}
-      />
-      <Link href="/">Menu</Link>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.titulo}>Lista de Motos</Text>
+        <Link href="Cadastro" asChild>
+          <TouchableOpacity style={styles.button}>
+            <Text style={styles.buttonText}>Cadastrar nova moto</Text>
+          </TouchableOpacity>
+        </Link>
+      </View>
+
+      {motos.length === 0 ? (
+        <Text style={styles.noMotosText}>Nenhuma moto cadastrada.</Text>
+      ) : (
+        <FlatList
+          data={motos}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.item}>
+              <FontAwesome name="motorcycle" size={24} color="black" style={styles.icon} />
+              <View style={styles.textContainer}>
+                <Text style={styles.placa}>Placa: {item.placa}</Text>
+                <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
+                  Status: {item.status}
+                </Text>
+              </View>
+            </View>
+          )}
+        />
+      )}
+
+      <View style={styles.footer}>
+        <Link href="/" style={styles.link}>Voltar ao Menu</Link>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
-  titulo: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
+  container: {
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+    padding: 20,
+  },
+  header: {
+    backgroundColor: '#1DCD9F', //#6200ee
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titulo: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  button: {
+    backgroundColor: '#222', //#03dac5
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  noMotosText: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: '#666',
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 8,
+    elevation: 5, // Sombra para Android
+    shadowColor: '#000', // Sombra para iOS
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  icon: {
+    marginRight: 15,
+  },
+  textContainer: {
+    flexDirection: 'column',
+  },
+  placa: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333',
+  },
+  status: {
+    fontSize: 14,
+    marginTop: 5,
+    fontWeight: '500',
+  },
+  footer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  link: {
+    fontSize: 16,
+    color: '#6200ee',
+    textDecorationLine: 'underline',
+  },
 });

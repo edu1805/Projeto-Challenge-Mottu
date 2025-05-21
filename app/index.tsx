@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import {View, Text, StyleSheet, FlatList, Pressable, Modal, TouchableOpacity} from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { Moto, MotoStatus } from './types/Moto';
-import { mockMotos } from './data/mockMoto';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { mockMotos } from './data/mockMoto';
+import { Moto, MotoStatus } from './types/Moto';
 
 
 const statusColors: Record<MotoStatus, string> = {
@@ -65,9 +65,14 @@ const PatioGrid: React.FC = () => {
         )}
       />
 
-      <TouchableOpacity style={styles.addButton} onPress={() => router.push('/Cadastro')} >
-        <Text style={styles.addButtonText}>+ Nova Moto</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }} >
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/Cadastro')} >
+          <Text style={styles.addButtonText}>+ Nova Moto</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push('Patio')}>
+          <Text style={styles.addButtonText}>Ver todas as motos</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Modal de Edição */}
       <Modal
@@ -173,17 +178,17 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   },
   addButton: {
-  backgroundColor: '#2563eb',
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderRadius: 10,
-  marginBottom: 16,
-  alignSelf: 'flex-start'
-},
-addButtonText: {
-  color: 'white',
-  fontWeight: 'bold',
-  fontSize: 16
-}
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 16,
+    alignSelf: 'flex-start'
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16
+  }
 
 });

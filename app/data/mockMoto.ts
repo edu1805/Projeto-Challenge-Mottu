@@ -22,7 +22,7 @@ export const mockMotos: Moto[] = [
   { id: 'moto14', placa: 'CCC4567', status: 'reservada', coordenadaX: 4, coordenadaY: 3 },
   { id: 'moto15', placa: 'CCC5678', status: 'reservada', coordenadaX: 5, coordenadaY: 3 },
 
-  // Em uso
+  // Sem Placa
   { id: 'moto16', placa: 'DDD1234', status: 'sem_placa', coordenadaX: 1, coordenadaY: 4 },
   { id: 'moto17', placa: 'DDD2345', status: 'sem_placa', coordenadaX: 2, coordenadaY: 4 },
   { id: 'moto18', placa: 'DDD3456', status: 'sem_placa', coordenadaX: 3, coordenadaY: 4 },

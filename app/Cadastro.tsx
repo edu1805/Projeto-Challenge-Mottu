@@ -1,20 +1,20 @@
-import { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { nanoid } from 'nanoid/non-secure';
-import React from 'react';
 import { Link } from 'expo-router';
+import { nanoid } from 'nanoid/non-secure';
+import React, { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { MaskedTextInput } from 'react-native-mask-text';
 import RNPickerSelect from 'react-native-picker-select';
 
 
 export default function Cadastro() {
-  const [moto, setMoto] = useState({ placa: '', status: ''});
+  const [moto, setMoto] = useState({ placa: '', status: '' });
 
   const handleChange = (field: string, value: string) => {
     setMoto((prev) => ({ ...prev, [field]: value }));
   };
 
-  const salvarMoto = async (novaMoto: { placa: string; status: string; id: string; }) => {
+  const salvarMoto = async (novaMoto: { placa: string; status: string; id: string }) => {
     try {
       const json = await AsyncStorage.getItem('@motos');
       const motos = json ? JSON.parse(json) : [];
@@ -34,8 +34,18 @@ export default function Cadastro() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Cadastro de Moto</Text>
-      <TextInput placeholder="Placa" style={styles.input} value={moto.placa} onChangeText={(v) => handleChange('placa', v)} />
+      <Text style={styles.titulo}>Cadastrar Nova Moto</Text>
+
+      <MaskedTextInput
+        type="custom"
+        options={{ mask: 'AAA#A##' }}
+        value={moto.placa}
+        onChangeText={(masked) => handleChange('placa', masked)}
+        style={styles.input}
+        placeholder="Placa (ex: ABC1D23)"
+        autoCapitalize="characters"
+      />
+
       <RNPickerSelect
         onValueChange={(value) => handleChange('status', value)}
         value={moto.status}
@@ -44,41 +54,90 @@ export default function Cadastro() {
           { label: 'Pronta para usar', value: 'pronta' },
           { label: 'Requer revisão', value: 'revisao' },
           { label: 'Reservada', value: 'reservada' },
+          { label: 'Sem Placa', value: 'sem_placa' },
         ]}
         style={pickerSelectStyles}
       />
 
-      <Button title="Cadastrar" onPress={handleSubmit} />
-      <Link href="/">Menu</Link>
+      <Pressable style={styles.botao} onPress={handleSubmit}>
+        <Text style={styles.botaoTexto}>Cadastrar Moto</Text>
+      </Pressable>
+
+      <View style={styles.links}>
+        <Link href="/motos" style={styles.linkTexto}>📋 Ver Todas as Motos</Link>
+        <Link href="/" style={styles.linkTexto}>🏠 Voltar ao Menu</Link>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
-  titulo: { fontSize: 22, fontWeight: 'bold', marginBottom: 15 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10 },
+  container: {
+    padding: 24,
+    backgroundColor: '#f9f9f9',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  titulo: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    textAlign: 'center',
+    color: '#222',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  botao: {
+    backgroundColor: '#0066cc',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  botaoTexto: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  links: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  linkTexto: {
+    color: '#0066cc',
+    fontSize: 16,
+  },
 });
 
 const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
     fontSize: 16,
     paddingVertical: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    color: 'black',
-    marginBottom: 10,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    color: '#000',
+    marginBottom: 16,
+    backgroundColor: '#fff',
   },
   inputAndroid: {
     fontSize: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    color: 'black',
-    marginBottom: 10,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    color: '#000',
+    marginBottom: 16,
+    backgroundColor: '#fff',
   },
 });

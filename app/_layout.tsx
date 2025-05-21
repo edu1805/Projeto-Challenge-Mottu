@@ -1,6 +1,42 @@
-import { Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Drawer } from 'expo-router/drawer';
 import React from 'react';
 
 export default function Layout() {
-  return <Stack screenOptions={{ headerShown: true }} />;
+  return (
+    <Drawer screenOptions={{ headerShown: true, }}>
+      <Drawer.Screen
+        name="index"
+        options={{
+          title: "Dashboard",
+          drawerLabel: 'Início',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="Cadastro"
+        options={{
+          title: "Cadastrar moto",
+          drawerLabel: 'Cadastro de Moto',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="add-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="Patio"
+        options={{
+          title: "Motos",
+          drawerLabel: 'Ver Todas as Motos',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="bicycle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Drawer>
+  );
 }
