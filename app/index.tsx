@@ -1,52 +1,189 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { Link } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
+import {View, Text, StyleSheet, FlatList, Pressable, Modal, TouchableOpacity} from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+import { Moto, MotoStatus } from './types/Moto';
+import { mockMotos } from './data/mockMoto';
+import { useRouter } from 'expo-router';
 
-const motos = [
-  { id: '1', placa: 'ABC1234', motor: 'OK', situacao: 'prontas para uso' },
-  { id: '2', placa: 'XYZ5678', motor: 'com defeito', situacao: 'motor com defeito' },
-  { id: '3', placa: '---', motor: 'OK', situacao: 'sem placa' },
-  { id: '4', placa: 'AAA1111', motor: 'OK', situacao: 'reservada' },
-];
 
-export default function Home() {
-  const grupos = [
-    { titulo: 'Prontas para uso', filtro: 'prontas para uso', cor: 'green' },
-    { titulo: 'Com problema', filtro: 'motor com defeito', cor: 'red' },
-    { titulo: 'Sem placa', filtro: 'sem placa', cor: 'orange' },
-    { titulo: 'Reservadas', filtro: 'reservada', cor: 'blue' },
-  ];
+const statusColors: Record<MotoStatus, string> = {
+  pronta: '#4ade80',
+  revisao: '#f87171',
+  reservada: '#60a5fa',
+  sem_placa: '#9ca3af'
+};
+
+const statusLabels: Record<MotoStatus, string> = {
+  pronta: 'Pronta',
+  revisao: 'Revisão',
+  reservada: 'Reservada',
+  sem_placa: 'Sem placa'
+};
+
+const PatioGrid: React.FC = () => {
+  const router = useRouter();
+
+  const [motos, setMotos] = useState<Moto[]>(mockMotos);
+  const [selectedMoto, setSelectedMoto] = useState<Moto | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handlePress = (moto: Moto) => {
+    setSelectedMoto(moto);
+    setModalVisible(true);
+  };
+
+  const handleStatusChange = (newStatus: MotoStatus) => {
+    if (!selectedMoto) return;
+    const atualizadas = motos.map((m) =>
+      m.id === selectedMoto.id ? { ...m, status: newStatus } : m
+    );
+    setMotos(atualizadas);
+    setModalVisible(false);
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.titulo}>Dashboard de Motos</Text>
-      {grupos.map(({ titulo, filtro, cor }) => (
-        <View key={filtro} style={styles.grupo}>
-          <Text style={styles.subtitulo}>{titulo}</Text>
-          <View style={styles.lista}>
-            {motos.filter(m => m.situacao === filtro).map((m) => (
-              <MaterialCommunityIcons
-                key={m.id}
-                name="motorbike"
-                size={40}
-                color={cor}
-                style={{ marginRight: 10 }}
-              />
-            ))}
+    <View style={styles.container}>
+      <Text style={styles.title}>📍 Dashboard de Motos</Text>
+
+      <FlatList
+        data={motos}
+        keyExtractor={(item) => item.id}
+        numColumns={4}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.grid}
+        renderItem={({ item }) => (
+          <Pressable
+            style={[
+              styles.motoBox,
+              { borderColor: statusColors[item.status] }
+            ]}
+            onPress={() => handlePress(item)}
+          >
+            <FontAwesome name="motorcycle" size={20} color="#1f2937" />
+            <Text style={styles.placa}>{item.placa}</Text>
+          </Pressable>
+        )}
+      />
+
+      <TouchableOpacity style={styles.addButton} onPress={() => router.push('/Cadastro')} >
+        <Text style={styles.addButtonText}>+ Nova Moto</Text>
+      </TouchableOpacity>
+
+      {/* Modal de Edição */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Editar Status</Text>
+            {Object.keys(statusLabels).map((statusKey) => {
+              const status = statusKey as MotoStatus;
+              return (
+                <TouchableOpacity
+                  key={status}
+                  style={[
+                    styles.statusButton,
+                    { borderColor: statusColors[status] }
+                  ]}
+                  onPress={() => handleStatusChange(status)}
+                >
+                  <Text style={{ color: statusColors[status], fontWeight: 'bold' }}>
+                    {statusLabels[status]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.cancel}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      ))}
-      <Link href="/Cadastro">Cadastrar Moto</Link>
-      <Link href="/Patio">Ver todas</Link>
-    </ScrollView>
+      </Modal>
+    </View>
   );
-}
+};
+
+export default PatioGrid;
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#fff' },
-  titulo: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  grupo: { marginBottom: 20 },
-  subtitulo: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
-  lista: { flexDirection: 'row', flexWrap: 'wrap' },
+  container: {
+    flex: 1,
+    padding: 16
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16
+  },
+  grid: {
+    gap: 12
+  },
+  row: {
+    justifyContent: 'space-between',
+    marginBottom: 12
+  },
+  motoBox: {
+    width: '23%',
+    aspectRatio: 1,
+    borderWidth: 2,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    padding: 6
+  },
+  placa: {
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center'
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: '#00000088',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    padding: 24,
+    borderRadius: 12,
+    width: '80%',
+    alignItems: 'center'
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16
+  },
+  statusButton: {
+    borderWidth: 2,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+    width: '100%',
+    alignItems: 'center'
+  },
+  cancel: {
+    marginTop: 12,
+    color: '#6b7280',
+    fontWeight: '600'
+  },
+  addButton: {
+  backgroundColor: '#2563eb',
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderRadius: 10,
+  marginBottom: 16,
+  alignSelf: 'flex-start'
+},
+addButtonText: {
+  color: 'white',
+  fontWeight: 'bold',
+  fontSize: 16
+}
+
 });
