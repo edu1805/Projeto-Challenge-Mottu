@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link } from 'expo-router';
 import { nanoid } from 'nanoid/non-secure';
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaskedTextInput } from 'react-native-mask-text';
 import RNPickerSelect from 'react-native-picker-select';
 
@@ -36,15 +36,14 @@ export default function Cadastro() {
     <View style={styles.container}>
       <Text style={styles.titulo}>Cadastrar Nova Moto</Text>
 
-      <MaskedTextInput
-        type="custom"
-        options={{ mask: 'AAA#A##' }}
+      <TextInput
         value={moto.placa}
-        onChangeText={(masked) => handleChange('placa', masked)}
+        onChangeText={(text) => handleChange('placa', text)}
         style={styles.input}
         placeholder="Placa (ex: ABC1D23)"
         autoCapitalize="characters"
       />
+
 
       <RNPickerSelect
         onValueChange={(value) => handleChange('status', value)}
@@ -64,7 +63,7 @@ export default function Cadastro() {
       </Pressable>
 
       <View style={styles.links}>
-        <Link href="/motos" style={styles.linkTexto}>📋 Ver Todas as Motos</Link>
+        <Link href="/Patio" style={styles.linkTexto}>📋 Ver Todas as Motos</Link>
         <Link href="/" style={styles.linkTexto}>🏠 Voltar ao Menu</Link>
       </View>
     </View>

@@ -1,4 +1,4 @@
-import { FontAwesome } from '@expo/vector-icons'; // Importando ícones do FontAwesome
+import { FontAwesome } from '@expo/vector-icons'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link, useFocusEffect } from 'expo-router';
 import React, { useState } from 'react';
@@ -7,7 +7,6 @@ import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from
 export default function Patio() {
   const [motos, setMotos] = useState<{ id: string; placa: string; status: string }[]>([]);
 
-  // Função para carregar as motos do AsyncStorage
   const carregarMotos = async () => {
     try {
       const json = await AsyncStorage.getItem('@motos');
@@ -18,14 +17,23 @@ export default function Patio() {
     }
   };
 
-  // Usando useFocusEffect para garantir que as motos sejam carregadas sempre que a tela for focada
+  const excluirMoto = async (id: string) => {
+  try {
+    const novaLista = motos.filter((moto) => moto.id !== id);
+    await AsyncStorage.setItem('@motos', JSON.stringify(novaLista));
+    setMotos(novaLista);
+  } catch (error) {
+    console.error('Erro ao excluir moto:', error);
+  }
+};
+
+
   useFocusEffect(
     React.useCallback(() => {
       carregarMotos();
     }, [])
   );
 
-  // Função para definir a cor do status
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pronta':
@@ -62,13 +70,20 @@ export default function Patio() {
             <View style={styles.item}>
               <FontAwesome name="motorcycle" size={24} color="black" style={styles.icon} />
               <View style={styles.textContainer}>
-                <Text style={styles.placa}>Placa: {item.placa}</Text>
+                <Text style={styles.placa}>
+                  Placa: {item.status === 'sem_placa' ? item.id : item.placa}
+                </Text>
                 <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
                   Status: {item.status}
                 </Text>
               </View>
+              <TouchableOpacity onPress={() => excluirMoto(item.id)} style={styles.excluirButton}>
+                <Text style={styles.excluirText}>Excluir</Text>
+              </TouchableOpacity>
             </View>
+
           )}
+
         />
       )}
 
@@ -86,7 +101,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    backgroundColor: '#1DCD9F', //#6200ee
+    backgroundColor: '#1DCD9F', 
     padding: 15,
     borderRadius: 8,
     marginBottom: 20,
@@ -99,7 +114,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   button: {
-    backgroundColor: '#222', //#03dac5
+    backgroundColor: '#222', 
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 25,
@@ -153,4 +168,18 @@ const styles = StyleSheet.create({
     color: '#6200ee',
     textDecorationLine: 'underline',
   },
+  excluirButton: {
+  marginLeft: 'auto',
+  backgroundColor: '#ef4444',
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  borderRadius: 6,
+},
+
+excluirText: {
+  color: 'white',
+  fontWeight: 'bold',
+  fontSize: 14,
+},
+
 });
