@@ -14,7 +14,7 @@ export default function Integrantes() {
       nome: 'Thiago Lima de Freitas',
       rm: 'RM556795',
       github: 'https://github.com/thiglfa',
-      avatar: require('../assets/favicon.png'),
+      avatar: require('../assets/foto3.jpg'),
     },
     {
       nome: 'Bruno Centurion Fernandes',
