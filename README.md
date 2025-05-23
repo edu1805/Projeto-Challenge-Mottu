@@ -19,7 +19,7 @@ A aplicação permite:
   - **Status:** *pronta*, *revisao*, *reservada*, *sem placa*;
 - 📊 Relatórios por status com contagem e exibição das motos;
 - 📋 Listagem completa das motos cadastradas;
-- 🔄 Atualização e ❌ exclusão de cadastros;
+- 🔄 Atualização e ❌ exclusão de motos;
 - 📍 Visualização da localização por coordenadas (X, Y) (**_em desenvolvimento_**);
 - 💾 Armazenamento local com AsyncStorage para simulação de persistência.
 ---
