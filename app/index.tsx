@@ -1,445 +1,216 @@
-import { FontAwesome } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router'; // Adicione useFocusEffect
-import React, { useState, useEffect, useCallback } from 'react'; // Adicione useCallback
-import { FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Alert, TextInput } from 'react-native';
-import { Moto, MotoStatus } from './types/Moto';
-import api from './services/api';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from './services/firebaseConfig';
 
-const statusColors: Record<MotoStatus, string> = {
-  pronta: '#4ade80',
-  revisao: '#f87171',
-  reservada: '#60a5fa',
-  "fora de serviço": '#9ca3af'
-};
+export default function LoginScreen() {
+  // Estados para armazenar os valores digitados
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [loading, setLoading] = useState(false);
 
-const statusLabels: Record<MotoStatus, string> = {
-  pronta: 'Pronta',
-  revisao: 'Revisão',
-  reservada: 'Reservada',
-  "fora de serviço": 'fora de serviço'
-};
-
-const PatioGrid: React.FC = () => {
   const router = useRouter();
 
-  const [motos, setMotos] = useState<Moto[]>([]);
-  const [selectedMoto, setSelectedMoto] = useState<Moto | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [novaPosicao, setNovaPosicao] = useState('');
-  const [updating, setUpdating] = useState(false);
-
-  // Buscar motos da API
-  const fetchMotos = async () => {
-    try {
-      console.log('🔄 Buscando motos da API...');
-      const response = await api.get<Moto[]>('/motos');
-      console.log('✅ Dados recebidos:', response.data.length, 'motos');
-      setMotos(response.data);
-    } catch (error) {
-      console.error('❌ Erro ao carregar motos:', error);
-      Alert.alert('Erro', 'Não foi possível carregar as motos');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  // Carregar motos quando o componente montar
   useEffect(() => {
-    fetchMotos();
+    const verificarUsuarioLogado = async () => {
+      try {
+        const usuarioSalvo = await AsyncStorage.getItem('@user');
+        if (usuarioSalvo) {
+          router.push('/');
+        }
+      } catch (error) {
+        console.log("Erro ao verificar login", error);
+      }
+    };
+
+    verificarUsuarioLogado();
   }, []);
 
-  // Recarregar motos quando a tela receber foco (após cadastro)
-  useFocusEffect(
-    useCallback(() => {
-      console.log('🎯 Tela em foco - recarregando dados...');
-      fetchMotos();
-    }, [])
-  );
-
-  const handlePress = (moto: Moto) => {
-    setSelectedMoto(moto);
-    setNovaPosicao(moto.posicao);
-    setModalVisible(true);
-  };
-
-  const handleStatusChange = async (newStatus: MotoStatus) => {
-    if (!selectedMoto) return;
+  // Função para realizar o login
+  const handleLogin = async () => {
+    if (!email || !senha) {
+      Alert.alert('Atenção', 'Preencha todos os campos!');
+      return;
+    }
 
     try {
-      setUpdating(true);
+      setLoading(true);
+      console.log('🔐 Tentando login...');
       
-      // Atualizar status na API
-      const response = await api.put(`/motos/editar/${selectedMoto.id}`, {
-        status: newStatus,
-        posicao: novaPosicao
-      });
-
-      // Atualizar lista local
-      setMotos(prevMotos => 
-        prevMotos.map(moto => 
-          moto.id === selectedMoto.id 
-            ? {
-                ...moto,
-                status: newStatus,
-                posicao: novaPosicao,
-                ultimaAtualizacao: response.data.ultimaAtualizacao || new Date().toISOString()
-              }
-            : moto
-        )
-      );
-
-      setModalVisible(false);
-      setNovaPosicao('');
-
-      Alert.alert('Sucesso', 
-        `Moto ${selectedMoto.placa} atualizada!\nStatus: ${statusLabels[newStatus]}\nPosição: ${novaPosicao}`
-      );
-    } catch (error) {
-      console.error('Erro ao atualizar moto:', error);
-      Alert.alert('Erro', 'Não foi possível atualizar a moto');
+      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+      const user = userCredential.user;
+      
+      await AsyncStorage.setItem('@user', JSON.stringify(user));
+      console.log('✅ Login realizado com sucesso');
+      
+      router.push('/HomeScreen');
+      
+    } catch (error: any) {
+      console.log("Erro no login:", error);
+      
+      let errorMessage = 'Erro ao fazer login';
+      
+      switch (error.code) {
+        case 'auth/invalid-credential':
+        case 'auth/wrong-password':
+        case 'auth/user-not-found':
+          errorMessage = 'Email ou senha incorretos';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Email inválido';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'Usuário desativado';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Muitas tentativas. Tente novamente mais tarde';
+          break;
+        default:
+          errorMessage = error.message || 'Erro desconhecido';
+      }
+      
+      Alert.alert('Erro', errorMessage);
     } finally {
-      setUpdating(false);
+      setLoading(false);
     }
   };
 
-  // Função para recarregar os dados
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchMotos();
+  // Função enviar o e-mail de reset de senha para o usuário
+  const esqueceuSenha = () => {
+    if (!email) {
+      Alert.alert('Atenção', 'Digite o email para recuperar a senha');
+      return;
+    }
+    
+    sendPasswordResetEmail(auth, email)
+      .then(() => { 
+        Alert.alert('Sucesso', 'E-mail de recuperação enviado!'); 
+      })
+      .catch((error) => {
+        console.log("Erro ao enviar email", error.message);
+        Alert.alert('Erro', 'Erro ao enviar e-mail. Verifique se o email está correto.');
+      });
   };
 
-  console.log('📊 Estado das motos:', motos.length, 'motos');
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2563eb" />
-        <Text style={styles.loadingText}>Carregando motos...</Text>
-      </View>
-    );
-  }
+  // Navegar para tela de cadastro
+  const irParaCadastro = () => {
+    router.push('/CadastrarScreen');
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>📍 Dashboard de Motos</Text>
-      <Text style={styles.subtitle}>Total: {motos.length} motos</Text>
+      <Text style={styles.titulo}>🏍️ Login</Text>
+      <Text style={styles.subtitle}>Sistema de Gerenciamento de Motos</Text>
 
-      <FlatList
-        data={motos}
-        keyExtractor={(item) => item.id}
-        numColumns={4}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.grid}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Nenhuma moto encontrada</Text>
-            <TouchableOpacity onPress={fetchMotos} style={styles.retryButton}>
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
-            </TouchableOpacity>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            style={[
-              styles.motoBox,
-              { borderColor: statusColors[item.status] }
-            ]}
-            onPress={() => handlePress(item)}
-          >
-            <FontAwesome name="motorcycle" size={20} color="#1f2937" />
-            <Text style={styles.placa}>{item.placa}</Text>
-            <Text style={styles.posicao}>{item.posicao}</Text>
-            <View style={[styles.statusIndicator, { backgroundColor: statusColors[item.status] }]} />
-          </Pressable>
-        )}
+      
+      <TextInput
+        style={styles.input}
+        placeholder="E-mail"
+        placeholderTextColor="#999"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        value={email}
+        onChangeText={setEmail}
+        editable={!loading}
       />
 
-      <View style={styles.buttonsRow}>
-        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/Cadastro')}>
-          <Text style={styles.addButtonText}>+ Nova Moto</Text>
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Senha"
+        placeholderTextColor="#999"
+        secureTextEntry={true}
+        value={senha}
+        onChangeText={setSenha}
+        editable={!loading}
+      />
+
+      
+      <TouchableOpacity 
+        style={[styles.botao, loading && styles.botaoDisabled]} 
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.textoBotao}>Entrar</Text>
+        )}
+      </TouchableOpacity>
+
+      
+      <View style={styles.linksContainer}>
+        <TouchableOpacity onPress={esqueceuSenha} style={styles.link}>
+          <Text style={styles.linkText}>Esqueceu a senha?</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/Patio')}>
-          <Text style={styles.addButtonText}>Ver todas</Text>
+
+        <TouchableOpacity onPress={irParaCadastro} style={styles.link}>
+          <Text style={styles.linkText}>Criar uma conta</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Modal de Edição */}
-      <Modal
-        animationType="slide"
-        transparent
-        visible={modalVisible}
-        onRequestClose={() => !updating && setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Editar Moto</Text>
-
-            {/* Informações da moto */}
-            <View style={styles.motoInfo}>
-              <Text style={styles.motoPlaca}>Placa: {selectedMoto?.placa}</Text>
-              <Text style={styles.motoStatus}>
-                Status atual: {selectedMoto && statusLabels[selectedMoto.status]}
-              </Text>
-            </View>
-
-            {/* Campo para nova posição */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Nova Posição:</Text>
-              <TextInput
-                style={styles.textInput}
-                value={novaPosicao}
-                onChangeText={setNovaPosicao}
-                placeholder="Ex: A1, B2, C3..."
-                placeholderTextColor="#9ca3af"
-                editable={!updating}
-              />
-            </View>
-
-            <Text style={styles.sectionTitle}>Alterar Status:</Text>
-
-            {updating ? (
-              <View style={styles.updatingContainer}>
-                <ActivityIndicator size="large" color="#2563eb" />
-                <Text style={styles.updatingText}>Atualizando...</Text>
-              </View>
-            ) : (
-              <>
-                {Object.keys(statusLabels).map((statusKey) => {
-                  const status = statusKey as MotoStatus;
-                  return (
-                    <TouchableOpacity
-                      key={status}
-                      style={[
-                        styles.statusButton,
-                        { 
-                          borderColor: statusColors[status],
-                          backgroundColor: selectedMoto?.status === status ? `${statusColors[status]}20` : 'transparent'
-                        }
-                      ]}
-                      onPress={() => handleStatusChange(status)}
-                    >
-                      <Text style={{ color: statusColors[status], fontWeight: 'bold' }}>
-                        {statusLabels[status]}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </>
-            )}
-
-            <TouchableOpacity 
-              onPress={() => !updating && setModalVisible(false)}
-              disabled={updating}
-              style={styles.cancelButton}
-            >
-              <Text style={[styles.cancelText, updating && styles.disabledCancel]}>
-                Cancelar
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
-};
+}
 
-export default PatioGrid;
-
+// Estilização
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 16
-  },
-  grid: {
-    gap: 12
-  },
-  row: {
-    justifyContent: 'space-between',
-    marginBottom: 12
-  },
-  motoBox: {
-    width: '23%',
-    aspectRatio: 1,
-    borderWidth: 2,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#f8fafc',
-    padding: 6
+    justifyContent: 'center',
+    padding: 20,
   },
-  placa: {
-    fontSize: 12,
-    marginTop: 4,
+  titulo: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 8,
     textAlign: 'center',
-    fontWeight: 'bold'
-  },
-  posicao: {
-    fontSize: 10,
-    color: '#6b7280',
-    marginTop: 2
-  },
-  statusIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: '#00000088',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 12,
-    width: '80%',
-    alignItems: 'center'
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16
-  },
-  motoInfo: {
-    width: '100%',
-    padding: 12,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  motoPlaca: {
-    fontSize: 16,
-    fontWeight: 'bold',
     color: '#1f2937',
   },
-  motoStatus: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginTop: 4,
-  },
-  inputContainer: {
-    width: '100%',
-    marginBottom: 16,
-  },
-  inputLabel: {
+  subtitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    textAlign: 'center',
+    color: '#6b7280',
+    marginBottom: 40,
   },
-  textInput: {
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    fontSize: 16,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-    alignSelf: 'flex-start',
-    width: '100%',
-  },
-  statusButton: {
-    borderWidth: 2,
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12,
-    width: '100%',
-    alignItems: 'center'
-  },
-  updatingContainer: {
-    alignItems: 'center',
-    padding: 20,
-    width: '100%',
-  },
-  updatingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  cancelButton: {
-    marginTop: 16,
-    padding: 12,
-    width: '100%',
-    alignItems: 'center',
-  },
-  cancelText: {
-    color: '#6b7280',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  disabledCancel: {
-    color: '#d1d5db',
-    opacity: 0.5,
-  },
-  addButton: {
+  botao: {
     backgroundColor: '#2563eb',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    padding: 15,
     borderRadius: 10,
-    marginBottom: 16,
+    alignItems: 'center',
+    marginTop: 10,
   },
-  addButtonText: {
-    color: 'white',
+  botaoDisabled: {
+    backgroundColor: '#9ca3af',
+    opacity: 0.6,
+  },
+  textoBotao: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
-    fontSize: 16
   },
-  buttonsRow: {
-    flexDirection: "row", 
-    justifyContent: "space-between",
-    gap: 10
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6b7280'
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  linksContainer: {
+    marginTop: 20,
     alignItems: 'center',
-    padding: 20
+    gap: 12,
   },
-  emptyText: {
+  link: {
+    padding: 8,
+  },
+  linkText: {
+    color: '#2563eb',
     fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 16
+    textDecorationLine: 'underline',
   },
-  retryButton: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold'
-  }
 });

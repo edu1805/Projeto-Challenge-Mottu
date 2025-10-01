@@ -166,7 +166,7 @@ export default function Cadastro() {
         <Link href="/Patio" style={styles.linkTexto}>
           📋 Ver Todas as Motos
         </Link>
-        <Link href="/" style={styles.linkTexto}>
+        <Link href="/HomeScreen" style={styles.linkTexto}>
           🏠 Voltar ao Menu
         </Link>
       </View>

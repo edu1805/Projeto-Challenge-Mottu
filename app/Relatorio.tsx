@@ -124,7 +124,7 @@ export default function Relatorio() {
         }
       />
 
-      <TouchableOpacity style={styles.addButton} onPress={() => router.push('/')}>
+      <TouchableOpacity style={styles.addButton} onPress={() => router.push('/HomeScreen')}>
         <Text style={styles.addButtonText}>Voltar ao menu</Text>
       </TouchableOpacity>
     </View>

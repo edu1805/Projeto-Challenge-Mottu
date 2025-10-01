@@ -182,7 +182,7 @@ export default function Patio() {
       )}
 
       <View style={styles.footer}>
-        <Link href="/" style={styles.link}>Voltar ao Menu</Link>
+        <Link href="/HomeScreen" style={styles.link}>Voltar ao Menu</Link>
       </View>
     </SafeAreaView>
   );

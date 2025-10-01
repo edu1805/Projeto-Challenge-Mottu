@@ -5,7 +5,7 @@ import React from 'react';
 export default function Layout() {
   return (
     <Drawer screenOptions={{ headerShown: true, }}>
-      <Drawer.Screen name="index" options={{title: "Dashboard",drawerLabel: 'Início',
+      <Drawer.Screen name="HomeScreen" options={{title: "Dashboard",drawerLabel: 'Início',
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
@@ -40,6 +40,14 @@ export default function Layout() {
             <Ionicons name="people-outline" size={size} color={color} />
           ),
         }}
+      />
+
+      <Drawer.Screen name="Usuario" options={{ title: "Meu Perfil", 
+          drawerLabel: 'Usuário',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }} 
       />
 
     </Drawer>
