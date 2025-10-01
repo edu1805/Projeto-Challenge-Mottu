@@ -9,19 +9,19 @@
 ## 💡 Solução 
 ### A Mottu enfrenta o desafio de localizar rapidamente motos em seus pátios, que frequentemente se encontram desorganizados e com alto volume de veículos. Essa dificuldade impacta diretamente a eficiência logística, especialmente quando é necessário identificar motos com problemas ou sem placa.
 
-### Nossa solução consiste em um aplicativo móvel desenvolvido com React Native e Expo, que simula o controle de estoque e localização de motos nos pátios. A proposta considera o uso de sensores RFID e o mapeamento das motos por coordenadas (X, Y), com uma interface amigável para facilitar a visualização e o gerenciamento dos veículos.
+### Nossa solução consiste em um aplicativo móvel desenvolvido com React Native e Expo, que simula o controle de estoque e localização de motos nos pátios. A proposta considera o uso de sensores RFID e o mapeamento das motos, com uma interface amigável para facilitar a visualização e o gerenciamento dos veículos.
 ---
 ## 📌 Descrição da Solução
 A aplicação permite:
 
 - ✅ Cadastro de motos com:
-  - Placa ou identificação sem placa;
-  - **Status:** *pronta*, *revisao*, *reservada*, *sem placa*;
+  - Placa;
+  - **Status:** *pronta*, *revisao*, *reservada*, *fora de serviço*;
 - 📊 Relatórios por status com contagem e exibição das motos;
 - 📋 Listagem completa das motos cadastradas;
 - 🔄 Atualização e ❌ exclusão de motos;
-- 📍 Visualização da localização por coordenadas (X, Y) (**_em desenvolvimento_**);
-- 💾 Armazenamento local com AsyncStorage para simulação de persistência.
+- 💾 Sistema de login com Firebase.
+- 🌗 Tema claro/escuro automático
 ---
 ## 🚀 Como rodar o projeto localmente
 **1. Clone o repositório**
