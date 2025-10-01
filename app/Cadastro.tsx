@@ -4,99 +4,56 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator 
 import RNPickerSelect from 'react-native-picker-select';
 import api from './services/api';
 import { MotoStatus } from './types/Moto';
+import { useTheme } from './context/ThemeContext'; // 👈 hook do tema
 
 export default function Cadastro() {
   const router = useRouter();
+  const { colors, theme, toggleTheme } = useTheme();
+
   const [loading, setLoading] = useState(false);
-  
-  const [moto, setMoto] = useState({ 
-    placa: '', 
-    posicao: '', 
-    status: '' as MotoStatus 
-  });
+  const [moto, setMoto] = useState({ placa: '', posicao: '', status: '' as MotoStatus });
 
   const handleChange = (field: string, value: string) => {
     setMoto((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async () => {
-    // Validações
-    if (!moto.placa.trim()) {
-      Alert.alert('Atenção', 'Por favor, informe a placa da moto.');
-      return;
-    }
-
-    if (!moto.posicao.trim()) {
-      Alert.alert('Atenção', 'Por favor, informe a posição da moto.');
-      return;
-    }
-
-    if (!moto.status) {
-      Alert.alert('Atenção', 'Por favor, selecione o status da moto.');
-      return;
-    }
+    if (!moto.placa.trim()) { Alert.alert('Atenção', 'Informe a placa da moto.'); return; }
+    if (!moto.posicao.trim()) { Alert.alert('Atenção', 'Informe a posição da moto.'); return; }
+    if (!moto.status) { Alert.alert('Atenção', 'Selecione o status da moto.'); return; }
 
     try {
       setLoading(true);
-
-      // Gerar a data/hora atual
       const ultimaAtualizacao = new Date().toISOString();
-
-      // Preparar os dados para a API
       const dadosMoto = {
         placa: moto.placa.toUpperCase().trim(),
         posicao: moto.posicao.toUpperCase().trim(),
         status: moto.status,
-        ultimaAtualizacao: ultimaAtualizacao
+        ultimaAtualizacao
       };
 
-      console.log('📤 Enviando dados para API:', dadosMoto);
-
-      // Fazer POST para a API
       const response = await api.post('/motos/criar', dadosMoto);
 
-      console.log('✅ Moto cadastrada com sucesso:', response.data);
-
       Alert.alert(
-        'Sucesso', 
+        'Sucesso',
         `Moto ${moto.placa} cadastrada com sucesso!\nPosição: ${moto.posicao}\nStatus: ${getStatusLabel(moto.status)}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Limpar formulário e voltar para a tela anterior
-              setMoto({ placa: '', posicao: '', status: '' as MotoStatus });
-              router.back();
-            }
-          }
-        ]
+        [{ text: 'OK', onPress: () => { setMoto({ placa: '', posicao: '', status: '' as MotoStatus }); router.back(); } }]
       );
 
     } catch (error: any) {
-      console.error('❌ Erro ao cadastrar moto:', error);
-      
       let errorMessage = 'Erro ao cadastrar moto';
-      
       if (error.response) {
-        if (error.response.status === 400) {
-          errorMessage = 'Dados inválidos. Verifique as informações.';
-        } else if (error.response.status === 409) {
-          errorMessage = 'Já existe uma moto com esta placa ou posição.';
-        } else {
-          errorMessage = `Erro ${error.response.status}: ${error.response.data?.message || 'Erro no servidor'}`;
-        }
-      } else if (error.request) {
-        errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
-      }
-      
+        if (error.response.status === 400) errorMessage = 'Dados inválidos.';
+        else if (error.response.status === 409) errorMessage = 'Moto já cadastrada.';
+        else errorMessage = `Erro ${error.response.status}: ${error.response.data?.message || 'Erro no servidor'}`;
+      } else if (error.request) errorMessage = 'Não foi possível conectar ao servidor.';
       Alert.alert('Erro', errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Função para obter o label do status
-  const getStatusLabel = (status: MotoStatus): string => {
+  const getStatusLabel = (status: MotoStatus) => {
     const labels: Record<MotoStatus, string> = {
       pronta: 'Pronta para usar',
       revisao: 'Requer revisão',
@@ -107,33 +64,35 @@ export default function Cadastro() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Cadastrar Nova Moto</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Botão de alternar tema */}
+      <Pressable style={[styles.themeButton, { backgroundColor: colors.button }]} onPress={toggleTheme}>
+        <Text style={[styles.themeButtonText, { color: colors.buttonText }]}>{theme === 'light' ? '🌙 Modo Escuro' : '🌞 Modo Claro'}</Text>
+      </Pressable>
 
-      {/* Campo Placa */}
+      <Text style={[styles.titulo, { color: colors.text }]}>Cadastrar Nova Moto</Text>
+
       <TextInput
         value={moto.placa}
         onChangeText={(text) => handleChange('placa', text)}
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.input, color: colors.text, borderColor: colors.border }]}
         placeholder="Placa (ex: ABC1D23)"
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.placeholder}
         autoCapitalize="characters"
         maxLength={7}
         editable={!loading}
       />
 
-      {/* Campo Posição */}
       <TextInput
         value={moto.posicao}
         onChangeText={(text) => handleChange('posicao', text)}
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.input, color: colors.text, borderColor: colors.border }]}
         placeholder="Posição (ex: A1, B2, C3)"
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.placeholder}
         autoCapitalize="characters"
         editable={!loading}
       />
 
-      {/* Select Status */}
       <RNPickerSelect
         onValueChange={(value) => handleChange('status', value)}
         value={moto.status}
@@ -144,107 +103,35 @@ export default function Cadastro() {
           { label: 'Reservada', value: 'reservada' },
           { label: 'Fora de serviço', value: 'fora de serviço' },
         ]}
-        style={pickerSelectStyles}
+        style={{
+          inputIOS: { ...styles.pickerInput, backgroundColor: colors.input, color: colors.text, borderColor: colors.border },
+          inputAndroid: { ...styles.pickerInput, backgroundColor: colors.input, color: colors.text, borderColor: colors.border },
+        }}
         disabled={loading}
       />
 
-      {/* Botão de Cadastro */}
-      <Pressable 
-        style={[styles.botao, loading && styles.botaoDisabled]} 
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.botaoTexto}>Cadastrar Moto</Text>
-        )}
+      <Pressable style={[styles.botao, loading && styles.botaoDisabled, { backgroundColor: colors.button }]} onPress={handleSubmit} disabled={loading}>
+        {loading ? <ActivityIndicator color={colors.buttonText} /> : <Text style={[styles.botaoTexto, { color: colors.buttonText }]}>Cadastrar Moto</Text>}
       </Pressable>
 
-      {/* Links de Navegação */}
       <View style={styles.links}>
-        <Link href="/Patio" style={styles.linkTexto}>
-          📋 Ver Todas as Motos
-        </Link>
-        <Link href="/HomeScreen" style={styles.linkTexto}>
-          🏠 Voltar ao Menu
-        </Link>
+        <Link href="/Patio" style={[styles.linkTexto, { color: colors.button }]}>📋 Ver Todas as Motos</Link>
+        <Link href="/HomeScreen" style={[styles.linkTexto, { color: colors.button }]}>🏠 Voltar ao Menu</Link>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    backgroundColor: '#f9f9f9',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  titulo: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    textAlign: 'center',
-    color: '#222',
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  botao: {
-    backgroundColor: '#0066cc',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  botaoDisabled: {
-    backgroundColor: '#ccc',
-    opacity: 0.6,
-  },
-  botaoTexto: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  links: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  linkTexto: {
-    color: '#0066cc',
-    fontSize: 16,
-  },
-});
-
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    fontSize: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    color: '#000',
-    marginBottom: 16,
-    backgroundColor: '#fff',
-  },
-  inputAndroid: {
-    fontSize: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    color: '#000',
-    marginBottom: 16,
-    backgroundColor: '#fff',
-  },
+  container: { padding: 24, flex: 1, justifyContent: 'center' },
+  titulo: { fontSize: 26, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' },
+  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 15, paddingVertical: 12, fontSize: 16, marginBottom: 16 },
+  pickerInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 15, paddingVertical: 12, fontSize: 16, marginBottom: 16 },
+  botao: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginBottom: 30 },
+  botaoDisabled: { opacity: 0.6 },
+  botaoTexto: { fontSize: 16, fontWeight: 'bold' },
+  links: { alignItems: 'center', gap: 12 },
+  linkTexto: { fontSize: 16 },
+  themeButton: { padding: 12, borderRadius: 10, marginBottom: 12, alignItems: 'center' },
+  themeButtonText: { fontSize: 16, fontWeight: 'bold' },
 });

@@ -4,10 +4,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { auth } from './services/firebaseConfig';
 import { deleteUser } from 'firebase/auth';
+import { useTheme } from './context/ThemeContext'; 
 
 export default function Usuario() {
   const [email, setEmail] = useState<string | null>(null);
   const router = useRouter();
+  const { theme, toggleTheme, colors } = useTheme();
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -53,13 +55,23 @@ export default function Usuario() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>👤 Meu Perfil</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.titulo, { color: colors.text }]}>👤 Meu Perfil</Text>
       
-      <View style={styles.infoBox}>
-        <Text style={styles.label}>E-mail:</Text>
-        <Text style={styles.valor}>{email}</Text>
+      <View style={[styles.infoBox, { backgroundColor: colors.input }]}>
+        <Text style={[styles.label, { color: colors.text }]}>E-mail:</Text>
+        <Text style={[styles.valor, { color: colors.text }]}>{email}</Text>
       </View>
+
+      {/* Botão de alternar tema */}
+      <TouchableOpacity 
+        style={[styles.botao, { backgroundColor: colors.button }]} 
+        onPress={toggleTheme}
+      >
+        <Text style={[styles.textoBotao, { color: colors.buttonText }]}>
+          Mudar para {theme === "light" ? "🌙 Modo Escuro" : "🌞 Modo Claro"}
+        </Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={[styles.botao, { backgroundColor: '#2563eb' }]} onPress={realizarLogoff}>
         <Text style={styles.textoBotao}>Sair da Conta</Text>
@@ -76,7 +88,6 @@ export default function Usuario() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
     justifyContent: 'center',
     padding: 20,
   },
@@ -85,10 +96,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
-    color: '#1f2937',
   },
   infoBox: {
-    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 12,
     marginBottom: 30,
@@ -96,13 +105,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    color: '#6b7280',
     marginTop: 10,
   },
   valor: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
   },
   botao: {
     padding: 15,
@@ -111,7 +118,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   textoBotao: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   }
