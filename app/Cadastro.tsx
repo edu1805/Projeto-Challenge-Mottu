@@ -1,50 +1,139 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Link } from 'expo-router';
-import { nanoid } from 'nanoid/non-secure';
+import { Link, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { MaskedTextInput } from 'react-native-mask-text';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
-
+import api from './services/api';
+import { MotoStatus } from './types/Moto';
 
 export default function Cadastro() {
-  const [moto, setMoto] = useState({ placa: '', status: '' });
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  
+  const [moto, setMoto] = useState({ 
+    placa: '', 
+    posicao: '', 
+    status: '' as MotoStatus 
+  });
 
   const handleChange = (field: string, value: string) => {
     setMoto((prev) => ({ ...prev, [field]: value }));
   };
 
-  const salvarMoto = async (novaMoto: { placa: string; status: string; id: string }) => {
+  const handleSubmit = async () => {
+    // Validações
+    if (!moto.placa.trim()) {
+      Alert.alert('Atenção', 'Por favor, informe a placa da moto.');
+      return;
+    }
+
+    if (!moto.posicao.trim()) {
+      Alert.alert('Atenção', 'Por favor, informe a posição da moto.');
+      return;
+    }
+
+    if (!moto.status) {
+      Alert.alert('Atenção', 'Por favor, selecione o status da moto.');
+      return;
+    }
+
     try {
-      const json = await AsyncStorage.getItem('@motos');
-      const motos = json ? JSON.parse(json) : [];
-      motos.push(novaMoto);
-      await AsyncStorage.setItem('@motos', JSON.stringify(motos));
-      Alert.alert('Sucesso', 'Moto cadastrada com sucesso!');
-      setMoto({ placa: '', status: '' });
-    } catch (e) {
-      console.error('Erro ao salvar moto:', e);
+      setLoading(true);
+
+      // Gerar a data/hora atual
+      const ultimaAtualizacao = new Date().toISOString();
+
+      // Preparar os dados para a API
+      const dadosMoto = {
+        placa: moto.placa.toUpperCase().trim(),
+        posicao: moto.posicao.toUpperCase().trim(),
+        status: moto.status,
+        ultimaAtualizacao: ultimaAtualizacao
+      };
+
+      console.log('📤 Enviando dados para API:', dadosMoto);
+
+      // Fazer POST para a API
+      const response = await api.post('/motos/criar', dadosMoto);
+
+      console.log('✅ Moto cadastrada com sucesso:', response.data);
+
+      Alert.alert(
+        'Sucesso', 
+        `Moto ${moto.placa} cadastrada com sucesso!\nPosição: ${moto.posicao}\nStatus: ${getStatusLabel(moto.status)}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Limpar formulário e voltar para a tela anterior
+              setMoto({ placa: '', posicao: '', status: '' as MotoStatus });
+              router.back();
+            }
+          }
+        ]
+      );
+
+    } catch (error: any) {
+      console.error('❌ Erro ao cadastrar moto:', error);
+      
+      let errorMessage = 'Erro ao cadastrar moto';
+      
+      if (error.response) {
+        if (error.response.status === 400) {
+          errorMessage = 'Dados inválidos. Verifique as informações.';
+        } else if (error.response.status === 409) {
+          errorMessage = 'Já existe uma moto com esta placa ou posição.';
+        } else {
+          errorMessage = `Erro ${error.response.status}: ${error.response.data?.message || 'Erro no servidor'}`;
+        }
+      } else if (error.request) {
+        errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+      }
+      
+      Alert.alert('Erro', errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmit = () => {
-    const novaMoto = { id: nanoid(), ...moto };
-    salvarMoto(novaMoto);
+  // Função para obter o label do status
+  const getStatusLabel = (status: MotoStatus): string => {
+    const labels: Record<MotoStatus, string> = {
+      pronta: 'Pronta para usar',
+      revisao: 'Requer revisão',
+      reservada: 'Reservada',
+      'fora de serviço': 'Fora de serviço'
+    };
+    return labels[status] || status;
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Cadastrar Nova Moto</Text>
 
+      {/* Campo Placa */}
       <TextInput
         value={moto.placa}
         onChangeText={(text) => handleChange('placa', text)}
         style={styles.input}
         placeholder="Placa (ex: ABC1D23)"
+        placeholderTextColor="#999"
         autoCapitalize="characters"
+        maxLength={7}
+        editable={!loading}
       />
 
+      {/* Campo Posição */}
+      <TextInput
+        value={moto.posicao}
+        onChangeText={(text) => handleChange('posicao', text)}
+        style={styles.input}
+        placeholder="Posição (ex: A1, B2, C3)"
+        placeholderTextColor="#999"
+        autoCapitalize="characters"
+        editable={!loading}
+      />
 
+      {/* Select Status */}
       <RNPickerSelect
         onValueChange={(value) => handleChange('status', value)}
         value={moto.status}
@@ -53,18 +142,33 @@ export default function Cadastro() {
           { label: 'Pronta para usar', value: 'pronta' },
           { label: 'Requer revisão', value: 'revisao' },
           { label: 'Reservada', value: 'reservada' },
-          { label: 'Sem Placa', value: 'sem_placa' },
+          { label: 'Fora de serviço', value: 'fora de serviço' },
         ]}
         style={pickerSelectStyles}
+        disabled={loading}
       />
 
-      <Pressable style={styles.botao} onPress={handleSubmit}>
-        <Text style={styles.botaoTexto}>Cadastrar Moto</Text>
+      {/* Botão de Cadastro */}
+      <Pressable 
+        style={[styles.botao, loading && styles.botaoDisabled]} 
+        onPress={handleSubmit}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.botaoTexto}>Cadastrar Moto</Text>
+        )}
       </Pressable>
 
+      {/* Links de Navegação */}
       <View style={styles.links}>
-        <Link href="/Patio" style={styles.linkTexto}>📋 Ver Todas as Motos</Link>
-        <Link href="/" style={styles.linkTexto}>🏠 Voltar ao Menu</Link>
+        <Link href="/Patio" style={styles.linkTexto}>
+          📋 Ver Todas as Motos
+        </Link>
+        <Link href="/" style={styles.linkTexto}>
+          🏠 Voltar ao Menu
+        </Link>
       </View>
     </View>
   );
@@ -100,6 +204,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 30,
+  },
+  botaoDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.6,
   },
   botaoTexto: {
     color: '#fff',
