@@ -24,18 +24,21 @@ A aplicação permite:
 - 🌗 Tema claro/escuro automático
 ---
 ## 🚀 Como rodar o projeto localmente
-**1. Clone o repositório**
+**1. Rode a API da disciplina de DotNet:**
+> https://github.com/edu1805/Challange-DotNet03
+
+**2. Clone o repositório**
 ```bash
 git clone https://github.com/edu1805/Projeto-Challenge-Mottu.git
 cd seu-repositorio
 ```
 
-**2. Instale as dependências**
+**3. Instale as dependências**
 ```bash
 npm install
 ```
 
-**3. Inicie o projeto com o Expo**
+**4. Inicie o projeto com o Expo**
 ```bash
 npm start
 ```
